@@ -109,29 +109,44 @@ public final class SensiApi {
         // authorize (get auth cookie)
         return retrofitApi.authorize(new AuthorizeRequest(username, password))
                 // get thermostats
-                .thenCompose(authorizeResponse -> retrofitApi.thermostats())
+                .thenCompose(authorizeResponse -> {
+                    logger.debug("authorized successfully");
+                    return retrofitApi.thermostats();
+                })
                 // realtime negotiate (get connectionToken)
                 .thenCompose(thermostatResponses -> {
                     thermostats = thermostatResponses;
+                    logger.debug("fetched {} thermostat(s) successfully", thermostats.size());
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("thermostats: {}", Arrays.toString(thermostats.toArray()));
+                    }
                     return retrofitApi.negotiate(SensiApi.getUnixTimestamp());
                 })
                 // ping realtime endpoint
                 .thenCompose(negotiateResponse -> {
+                    logger.debug("negotiated successfully");
                     connectionToken = negotiateResponse.getConnectionToken();
                     return retrofitApi.ping(SensiApi.getUnixTimestamp());
                     // realtime connect
-                }).thenCompose(pingResponse -> retrofitApi.connect(
-                    TRANSPORT, connectionToken, CONNECTION_DATA, SensiApi.getTID(), SensiApi.getUnixTimestamp()
-                )).thenAccept(connectResponse -> {
+                }).thenCompose(pingResponse -> {
+                    logger.debug("pinged successfully");
+                    return retrofitApi.connect(
+                            TRANSPORT, connectionToken, CONNECTION_DATA, SensiApi.getTID(), SensiApi.getUnixTimestamp()
+                    );
+                }).thenAccept(connectResponse -> {
+                    logger.info("connected successfully");
                     messageId = connectResponse.getC();
                 });
     }
 
     public CompletableFuture<Void> subscribe() {
-        List<CompletableFuture<SubscribeResponse>> futures = thermostats.stream().map(thermostatResponse -> {
+        List<CompletableFuture<Void>> futures = thermostats.stream().map(thermostatResponse -> {
             SubscribeRequest subRequest = new SubscribeRequest(thermostatResponse.getiCD(), subscriptionId++);
             String subRequestBody = gson.toJson(subRequest);
-            return retrofitApi.subscribe(TRANSPORT, connectionToken, subRequestBody);
+            return retrofitApi.subscribe(TRANSPORT, connectionToken, subRequestBody)
+                    .thenAccept(subscribeResponse -> {
+                        logger.debug("successfully subscribed I: {}", subscribeResponse.getI());
+                    });
         }).collect(Collectors.toList());
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
     }
@@ -142,12 +157,14 @@ public final class SensiApi {
                 TRANSPORT, connectionToken, CONNECTION_DATA, groupsToken, messageId, SensiApi.getTID(),
                 SensiApi.getUnixTimestamp()
         ).thenAccept(responseBody -> {
+            logger.info("received poll response");
             String body;
             try {
                 body = responseBody.string();
             } catch (IOException e) {
                 throw new APIException("Exception while reading poll response body", e);
             }
+            logger.trace("responseBody: {}", body);
             Object document = Configuration.defaultConfiguration().jsonProvider().parse(body);
 
             // check if we have a new message, if so update this.messageId
@@ -162,7 +179,7 @@ public final class SensiApi {
                 } catch (IOException e) {
                     throw new APIException("Exception while processing poll response body", e);
                 }
-                logger.trace("OperationalStatuses: " + operationalStatuses);
+                logger.trace("OperationalStatuses: {}", operationalStatuses);
             }
 
             // check if we have a new groups token, if so update this.groupsToken
@@ -173,13 +190,15 @@ public final class SensiApi {
                 logger.debug("new groups token");
                 groupsToken = newGroupsToken;
             }
-            logger.trace("responseBody: " + body);
         });
     }
 
     public CompletableFuture<Void> disconnect() {
         // realtime abort
-        return retrofitApi.abort(TRANSPORT, connectionToken);
+        return retrofitApi.abort(TRANSPORT, connectionToken)
+                .thenRun(() -> {
+                    logger.info("disconnected successfully");
+                });
     }
 
     public void registerCallback(Consumer<OperationalStatus> callback) {
@@ -207,11 +226,13 @@ public final class SensiApi {
                 return;
             }
             OperationalStatus mergedStatus = operationalStatuses.merge(icd, operationalStatus, OperationalStatus::merge);
+            logger.debug("notifying {} callback(s) of updated status", callbacks.size());
+            logger.trace("updated status [{}]: {}", icd, mergedStatus);
             callbacks.forEach(operationalStatusConsumer -> operationalStatusConsumer.accept(mergedStatus));
         } catch (PathNotFoundException e) {
             // Option.SUPPRESS_EXCEPTIONS throws AssertionError when GsonMappingProvider is used
             // ignore PathNotFoundException instead
-            logger.trace("Path not found", e);
+            logger.trace("Path not found: {}", e.getMessage());
         }
     }
 
@@ -233,9 +254,7 @@ public final class SensiApi {
             cookieJar = new PersistentCookieJar();
         }
         if (interceptors == null || interceptors.isEmpty()) {
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
-            interceptors = Arrays.asList(loggingInterceptor, DEFAULT_OK_HTTP_INTERCEPTOR);
+            interceptors = Collections.singletonList(DEFAULT_OK_HTTP_INTERCEPTOR);
         }
 
         OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
