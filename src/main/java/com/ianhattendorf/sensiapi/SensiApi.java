@@ -20,15 +20,17 @@ import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.adapter.java8.Java8CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public final class SensiApi {
     private final RetrofitApi retrofitApi;
@@ -103,45 +105,81 @@ public final class SensiApi {
         this.retrofitApi = retrofitApi;
     }
 
-    public void start() throws IOException, APIException {
+    public CompletableFuture<Void> start() {
         // authorize (get auth cookie)
-        Response<AuthorizeResponse> authResponse = retrofitApi.authorize(
-                new AuthorizeRequest(username, password)
-        ).execute();
-        verifyResponse(authResponse);
-
-        // get thermostats
-        Response<List<ThermostatResponse>> thermResponse = retrofitApi.thermostats().execute();
-        verifyResponse(thermResponse);
-        thermostats = thermResponse.body();
-
-        // realtime negotiate (get connectionToken)
-        Response<NegotiateResponse> negotiateResponse = retrofitApi.negotiate(SensiApi.getUnixTimestamp()).execute();
-        verifyResponse(negotiateResponse);
-        connectionToken = negotiateResponse.body().getConnectionToken();
-
-        // ping realtime endpoint
-        Response<PingResponse> pingResponse = retrofitApi.ping(SensiApi.getUnixTimestamp()).execute();
-        verifyResponse(pingResponse);
-
-        // realtime connect
-        Response<ConnectResponse> connectResponse = retrofitApi.connect(
-                TRANSPORT, connectionToken, CONNECTION_DATA, SensiApi.getTID(), SensiApi.getUnixTimestamp()
-        ).execute();
-        verifyResponse(connectResponse);
-        messageId = connectResponse.body().getC();
+        return retrofitApi.authorize(new AuthorizeRequest(username, password))
+                // get thermostats
+                .thenCompose(authorizeResponse -> retrofitApi.thermostats())
+                // realtime negotiate (get connectionToken)
+                .thenCompose(thermostatResponses -> {
+                    thermostats = thermostatResponses;
+                    return retrofitApi.negotiate(SensiApi.getUnixTimestamp());
+                })
+                // ping realtime endpoint
+                .thenCompose(negotiateResponse -> {
+                    connectionToken = negotiateResponse.getConnectionToken();
+                    return retrofitApi.ping(SensiApi.getUnixTimestamp());
+                    // realtime connect
+                }).thenCompose(pingResponse -> retrofitApi.connect(
+                    TRANSPORT, connectionToken, CONNECTION_DATA, SensiApi.getTID(), SensiApi.getUnixTimestamp()
+                )).thenAccept(connectResponse -> {
+                    messageId = connectResponse.getC();
+                });
     }
 
-    public void subscribe() throws IOException, APIException {
-        for (ThermostatResponse thermostat : thermostats) {
-            // subscribe thermostat
-            SubscribeRequest subRequest = new SubscribeRequest(thermostat.getiCD(), subscriptionId++);
+    public CompletableFuture<Void> subscribe() {
+        List<CompletableFuture<SubscribeResponse>> futures = thermostats.stream().map(thermostatResponse -> {
+            SubscribeRequest subRequest = new SubscribeRequest(thermostatResponse.getiCD(), subscriptionId++);
             String subRequestBody = gson.toJson(subRequest);
-            Response<SubscribeResponse> subResponse = retrofitApi
-                    .subscribe(TRANSPORT, connectionToken, subRequestBody)
-                    .execute();
-            verifyResponse(subResponse);
-        }
+            return retrofitApi.subscribe(TRANSPORT, connectionToken, subRequestBody);
+        }).collect(Collectors.toList());
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+    }
+
+    public CompletableFuture<Void> poll() {
+        // realtime poll for messages
+        return retrofitApi.poll(
+                TRANSPORT, connectionToken, CONNECTION_DATA, groupsToken, messageId, SensiApi.getTID(),
+                SensiApi.getUnixTimestamp()
+        ).thenAccept(responseBody -> {
+            String body;
+            try {
+                body = responseBody.string();
+            } catch (IOException e) {
+                throw new APIException("Exception while reading poll response body", e);
+            }
+            Object document = Configuration.defaultConfiguration().jsonProvider().parse(body);
+
+            // check if we have a new message, if so update this.messageId
+            String newMessageId = JsonPath.parse(document).read(POLL_C_PATH, String.class);
+            if (messageId.equals(newMessageId)) {
+                logger.trace("old message");
+            } else {
+                logger.debug("new message");
+                messageId = newMessageId;
+                try {
+                    processOperationalStatus(document);
+                } catch (IOException e) {
+                    throw new APIException("Exception while processing poll response body", e);
+                }
+                logger.trace("OperationalStatuses: " + operationalStatuses);
+            }
+
+            // check if we have a new groups token, if so update this.groupsToken
+            String newGroupsToken = JsonPath.parse(document).read(POLL_G_PATH, String.class);
+            if (newGroupsToken == null || newGroupsToken.equals(groupsToken)) {
+                logger.trace("old groups token");
+            } else {
+                logger.debug("new groups token");
+                groupsToken = newGroupsToken;
+            }
+            logger.trace("responseBody: " + body);
+        });
+    }
+
+    public CompletableFuture<Void> disconnect() {
+        // realtime abort
+        return retrofitApi.abort(TRANSPORT, connectionToken);
     }
 
     public void registerCallback(Consumer<OperationalStatus> callback) {
@@ -154,38 +192,6 @@ public final class SensiApi {
 
     public void deregisterAllCallbacks() {
         callbacks.clear();
-    }
-
-    public void poll() throws IOException, APIException {
-        // realtime poll for messages
-        Response<ResponseBody> pollResponse = retrofitApi.poll(
-                TRANSPORT, connectionToken, CONNECTION_DATA, groupsToken, messageId, SensiApi.getTID(),
-                SensiApi.getUnixTimestamp()
-        ).execute();
-        verifyResponse(pollResponse);
-        String body = pollResponse.body().string();
-        Object document = Configuration.defaultConfiguration().jsonProvider().parse(body);
-
-        // check if we have a new message, if so update this.messageId
-        String newMessageId = JsonPath.parse(document).read(POLL_C_PATH, String.class);
-        if (messageId.equals(newMessageId)) {
-            logger.trace("old message");
-        } else {
-            logger.debug("new message");
-            messageId = newMessageId;
-            processOperationalStatus(document);
-            logger.trace("OperationalStatuses: " + operationalStatuses);
-        }
-
-        // check if we have a new groups token, if so update this.groupsToken
-        String newGroupsToken = JsonPath.parse(document).read(POLL_G_PATH, String.class);
-        if (newGroupsToken == null || newGroupsToken.equals(groupsToken)) {
-            logger.trace("old groups token");
-        } else {
-            logger.debug("new groups token");
-            groupsToken = newGroupsToken;
-        }
-        logger.trace("responseBody: " + body);
     }
 
     // possible to have multiple status updates? (for multiple thermostats?)
@@ -206,22 +212,6 @@ public final class SensiApi {
             // Option.SUPPRESS_EXCEPTIONS throws AssertionError when GsonMappingProvider is used
             // ignore PathNotFoundException instead
             logger.trace("Path not found", e);
-        }
-    }
-
-    public void disconnect() throws IOException, APIException {
-        // realtime abort
-        Response<Void> abortResponse = retrofitApi.abort(TRANSPORT, connectionToken).execute();
-        verifyResponse(abortResponse);
-    }
-
-    private static void verifyResponse(Response<?> response) throws APIException {
-        if (!response.isSuccessful()) {
-            try {
-                throw new APIException(response.errorBody().string());
-            } catch (IOException e) {
-                throw new APIException("Exception while reading Response.errorBody()", e);
-            }
         }
     }
 
@@ -258,6 +248,7 @@ public final class SensiApi {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(apiUrl)
+                .addCallAdapterFactory(Java8CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(
                         new GsonBuilder()
                                 .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)

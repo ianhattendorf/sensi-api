@@ -1,6 +1,5 @@
 package com.ianhattendorf.sensiapi;
 
-import com.ianhattendorf.sensiapi.exception.APIException;
 import com.ianhattendorf.sensiapi.response.data.OperationalStatus;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -8,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import static org.mockito.Mockito.*;
@@ -16,7 +16,7 @@ public final class SensiApiIT {
     private static final Logger log = LoggerFactory.getLogger(SensiApiIT.class);
 
     @Test
-    public void testHappyPath() throws IOException, APIException {
+    public void testHappyPath() throws IOException, ExecutionException, InterruptedException {
         Properties properties = new Properties();
         properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties"));
 
@@ -28,12 +28,11 @@ public final class SensiApiIT {
         Consumer<OperationalStatus> callback = (Consumer<OperationalStatus>) mock(Consumer.class);
         api.registerCallback(callback);
 
-        api.start();
-        api.subscribe();
+        api.start().thenRun(api::subscribe).get();
         for (int i = 0; i < 2; ++i) {
-           api.poll();
+           api.poll().get();
         }
-        api.disconnect();
+        api.disconnect().get();
 
         verify(callback, atLeastOnce()).accept(notNull());
         verifyNoMoreInteractions(callback);
