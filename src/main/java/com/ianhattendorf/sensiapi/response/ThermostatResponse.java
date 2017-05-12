@@ -59,4 +59,20 @@ public final class ThermostatResponse {
     public String getCountry() {
         return country;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ThermostatResponse{");
+        sb.append("deviceName='").append(deviceName).append('\'');
+        sb.append(", contractorId=").append(contractorId);
+        sb.append(", address1='").append(address1).append('\'');
+        sb.append(", city='").append(city).append('\'');
+        sb.append(", state='").append(state).append('\'');
+        sb.append(", iCD='").append(iCD).append('\'');
+        sb.append(", timeZone='").append(timeZone).append('\'');
+        sb.append(", zipCode='").append(zipCode).append('\'');
+        sb.append(", country='").append(country).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }
