@@ -17,7 +17,6 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import okhttp3.*;
-import okhttp3.logging.HttpLoggingInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Retrofit;
@@ -29,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -42,7 +42,7 @@ public final class SensiApi {
     private String messageId;
     private List<ThermostatResponse> thermostats;
     private Map<String, OperationalStatus> operationalStatuses = new HashMap<>();
-    private final Set<Consumer<OperationalStatus>> callbacks = new LinkedHashSet<>();
+    private final Set<BiConsumer<String, OperationalStatus>> callbacks = new LinkedHashSet<>();
     private final Gson gson = gsonFactory();
 
     private static final Logger logger = LoggerFactory.getLogger(SensiApi.class);
@@ -201,11 +201,11 @@ public final class SensiApi {
                 });
     }
 
-    public void registerCallback(Consumer<OperationalStatus> callback) {
+    public void registerCallback(BiConsumer<String, OperationalStatus> callback) {
         callbacks.add(callback);
     }
 
-    public void deregisterCallback(Consumer<OperationalStatus> callback) {
+    public void deregisterCallback(BiConsumer<String, OperationalStatus> callback) {
         callbacks.remove(callback);
     }
 
@@ -228,7 +228,7 @@ public final class SensiApi {
             OperationalStatus mergedStatus = operationalStatuses.merge(icd, operationalStatus, OperationalStatus::merge);
             logger.debug("notifying {} callback(s) of updated status", callbacks.size());
             logger.trace("updated status [{}]: {}", icd, mergedStatus);
-            callbacks.forEach(operationalStatusConsumer -> operationalStatusConsumer.accept(mergedStatus));
+            callbacks.forEach(operationalStatusConsumer -> operationalStatusConsumer.accept(icd, mergedStatus));
         } catch (PathNotFoundException e) {
             // Option.SUPPRESS_EXCEPTIONS throws AssertionError when GsonMappingProvider is used
             // ignore PathNotFoundException instead

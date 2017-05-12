@@ -2,19 +2,15 @@ package com.ianhattendorf.sensiapi;
 
 import com.ianhattendorf.sensiapi.response.data.OperationalStatus;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import static org.mockito.Mockito.*;
 
 public final class SensiApiIT {
-    private static final Logger log = LoggerFactory.getLogger(SensiApiIT.class);
-
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException {
         Properties properties = new Properties();
@@ -25,7 +21,7 @@ public final class SensiApiIT {
                 .setPassword(properties.getProperty("password"))
                 .build();
         @SuppressWarnings("unchecked")
-        Consumer<OperationalStatus> callback = (Consumer<OperationalStatus>) mock(Consumer.class);
+        BiConsumer<String, OperationalStatus> callback = (BiConsumer<String, OperationalStatus>) mock(BiConsumer.class);
         api.registerCallback(callback);
 
         api.start().thenRun(api::subscribe).get();
@@ -34,7 +30,7 @@ public final class SensiApiIT {
         }
         api.disconnect().get();
 
-        verify(callback, atLeastOnce()).accept(notNull());
+        verify(callback, atLeastOnce()).accept(notNull(), notNull());
         verifyNoMoreInteractions(callback);
     }
 }
