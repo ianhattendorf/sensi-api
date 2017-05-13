@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi.request;
+package com.ianhattendorf.sensi.sensiapi.request;
 
 import java.util.ArrayList;
 import java.util.List;

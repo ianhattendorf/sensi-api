@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi.response.data;
+package com.ianhattendorf.sensi.sensiapi.response.data;
 
 public final class Temperature {
     public final Integer f;

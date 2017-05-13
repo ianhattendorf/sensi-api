@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi.response;
+package com.ianhattendorf.sensi.sensiapi.response;
 
 public final class ThermostatResponse {
     private final String deviceName;

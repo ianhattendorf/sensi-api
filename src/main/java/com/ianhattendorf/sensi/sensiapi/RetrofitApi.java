@@ -1,7 +1,7 @@
-package com.ianhattendorf.sensiapi;
+package com.ianhattendorf.sensi.sensiapi;
 
-import com.ianhattendorf.sensiapi.request.AuthorizeRequest;
-import com.ianhattendorf.sensiapi.response.*;
+import com.ianhattendorf.sensi.sensiapi.request.AuthorizeRequest;
+import com.ianhattendorf.sensi.sensiapi.response.*;
 import okhttp3.ResponseBody;
 import retrofit2.http.*;
 
@@ -29,10 +29,10 @@ public interface RetrofitApi {
 
     @GET("/realtime/connect")
     CompletableFuture<ConnectResponse> connect(@Query("transport") String transport,
-                                  @Query("connectionToken") String connectionToken,
-                                  @Query(value = "connectionData", encoded = true) String connectionData,
-                                  @Query("tid") int tid,
-                                  @Query("_") long ts);
+                                               @Query("connectionToken") String connectionToken,
+                                               @Query(value = "connectionData", encoded = true) String connectionData,
+                                               @Query("tid") int tid,
+                                               @Query("_") long ts);
 
     @GET("/realtime/poll")
     CompletableFuture<ResponseBody> poll(@Query("transport") String transport,

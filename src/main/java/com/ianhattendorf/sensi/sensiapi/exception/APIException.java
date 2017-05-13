@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi.exception;
+package com.ianhattendorf.sensi.sensiapi.exception;
 
 public class APIException extends RuntimeException {
     public APIException(String message) {

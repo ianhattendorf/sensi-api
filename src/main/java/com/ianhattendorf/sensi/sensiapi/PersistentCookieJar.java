@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi;
+package com.ianhattendorf.sensi.sensiapi;
 
 import okhttp3.Cookie;
 import okhttp3.CookieJar;

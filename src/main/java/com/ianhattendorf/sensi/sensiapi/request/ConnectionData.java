@@ -1,4 +1,4 @@
-package com.ianhattendorf.sensiapi.request;
+package com.ianhattendorf.sensi.sensiapi.request;
 
 public final class ConnectionData {
     private final String name;

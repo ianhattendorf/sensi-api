@@ -1,13 +1,13 @@
-package com.ianhattendorf.sensiapi;
+package com.ianhattendorf.sensi.sensiapi;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.ianhattendorf.sensiapi.exception.APIException;
-import com.ianhattendorf.sensiapi.request.AuthorizeRequest;
-import com.ianhattendorf.sensiapi.request.SubscribeRequest;
-import com.ianhattendorf.sensiapi.response.*;
-import com.ianhattendorf.sensiapi.response.data.OperationalStatus;
+import com.ianhattendorf.sensi.sensiapi.request.AuthorizeRequest;
+import com.ianhattendorf.sensi.sensiapi.response.ThermostatResponse;
+import com.ianhattendorf.sensi.sensiapi.response.data.OperationalStatus;
+import com.ianhattendorf.sensi.sensiapi.exception.APIException;
+import com.ianhattendorf.sensi.sensiapi.request.SubscribeRequest;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
