@@ -1,10 +1,12 @@
 package com.ianhattendorf.sensi.sensiapi.response.data;
 
 public final class ScheduleTemps {
-    private final Temperature autoHeat;
-    private final Temperature autoCool;
-    private final Temperature heat;
-    private final Temperature cool;
+    private Temperature autoHeat;
+    private Temperature autoCool;
+    private Temperature heat;
+    private Temperature cool;
+
+    public ScheduleTemps() {}
 
     public ScheduleTemps(Temperature autoHeat, Temperature autoCool, Temperature heat, Temperature cool) {
         this.autoHeat = autoHeat;

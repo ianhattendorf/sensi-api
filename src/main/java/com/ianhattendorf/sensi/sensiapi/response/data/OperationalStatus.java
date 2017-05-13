@@ -10,6 +10,8 @@ public final class OperationalStatus {
     private ScheduleTemps scheduleTemps;
     private Integer powerStatus;
 
+    public OperationalStatus() {}
+
     public OperationalStatus(Temperature temperature, Integer humidity, Integer batteryVoltage, Running running,
                              Boolean lowPower, String operatingMode, ScheduleTemps scheduleTemps, Integer powerStatus) {
         this.temperature = temperature;
