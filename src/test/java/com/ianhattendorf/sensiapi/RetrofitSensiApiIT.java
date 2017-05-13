@@ -10,13 +10,13 @@ import java.util.function.BiConsumer;
 
 import static org.mockito.Mockito.*;
 
-public final class SensiApiIT {
+public final class RetrofitSensiApiIT {
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException {
         Properties properties = new Properties();
         properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties"));
 
-        SensiApi api = new SensiApi.Builder()
+        SensiApi api = new RetrofitSensiApi.Builder()
                 .setUsername(properties.getProperty("username"))
                 .setPassword(properties.getProperty("password"))
                 .build();
