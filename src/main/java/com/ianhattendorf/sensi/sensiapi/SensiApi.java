@@ -1,6 +1,6 @@
 package com.ianhattendorf.sensi.sensiapi;
 
-import com.ianhattendorf.sensi.sensiapi.response.data.OperationalStatus;
+import com.ianhattendorf.sensi.sensiapi.response.data.Update;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -15,9 +15,9 @@ public interface SensiApi {
 
     CompletableFuture<Void> disconnect();
 
-    void registerCallback(BiConsumer<String, OperationalStatus> callback);
+    void registerCallback(BiConsumer<String, Update> callback);
 
-    void deregisterCallback(BiConsumer<String, OperationalStatus> callback);
+    void deregisterCallback(BiConsumer<String, Update> callback);
 
     void deregisterAllCallbacks();
 }

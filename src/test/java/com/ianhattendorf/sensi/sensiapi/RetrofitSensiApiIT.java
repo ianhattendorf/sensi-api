@@ -1,6 +1,6 @@
 package com.ianhattendorf.sensi.sensiapi;
 
-import com.ianhattendorf.sensi.sensiapi.response.data.OperationalStatus;
+import com.ianhattendorf.sensi.sensiapi.response.data.Update;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ public final class RetrofitSensiApiIT {
                 .setPassword(properties.getProperty("password"))
                 .build();
         @SuppressWarnings("unchecked")
-        BiConsumer<String, OperationalStatus> callback = (BiConsumer<String, OperationalStatus>) mock(BiConsumer.class);
+        BiConsumer<String, Update> callback = (BiConsumer<String, Update>) mock(BiConsumer.class);
         api.registerCallback(callback);
 
         api.start().thenRun(api::subscribe).get();

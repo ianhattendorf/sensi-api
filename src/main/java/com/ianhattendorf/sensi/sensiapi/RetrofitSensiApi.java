@@ -5,9 +5,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ianhattendorf.sensi.sensiapi.request.AuthorizeRequest;
 import com.ianhattendorf.sensi.sensiapi.response.ThermostatResponse;
-import com.ianhattendorf.sensi.sensiapi.response.data.OperationalStatus;
 import com.ianhattendorf.sensi.sensiapi.exception.APIException;
 import com.ianhattendorf.sensi.sensiapi.request.SubscribeRequest;
+import com.ianhattendorf.sensi.sensiapi.response.data.Update;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -40,16 +40,16 @@ public final class RetrofitSensiApi implements SensiApi {
     private String groupsToken;
     private String messageId;
     private List<ThermostatResponse> thermostats;
-    private Map<String, OperationalStatus> operationalStatuses = new HashMap<>();
-    private final Set<BiConsumer<String, OperationalStatus>> callbacks = new LinkedHashSet<>();
+    private Map<String, Update> thermostatUpdateMap = new HashMap<>();
+    private final Set<BiConsumer<String, Update>> callbacks = new LinkedHashSet<>();
     private final Gson gson = gsonFactory();
 
     private static final Logger logger = LoggerFactory.getLogger(RetrofitSensiApi.class);
     private static final String TRANSPORT = "longPolling";
     // [{"name":"thermostat-v1"}]
     private static final String CONNECTION_DATA = "%5B%7B%22name%22%3A%22thermostat-v1%22%7D%5D";
-    private static final String OPERATIONAL_STATUS_ICD_PATH = "$.M[0].A[0]";
-    private static final String OPERATIONAL_STATUS_DATA_PATH = "$.M[0].A[1].OperationalStatus";
+    private static final String UPDATE_ICD_PATH = "$.M[0].A[0]";
+    private static final String UPDATE_DATA_PATH = "$.M[0].A[1]";
     private static final String POLL_C_PATH = "$.C";
     private static final String POLL_G_PATH = "$.G";
     public static final Interceptor DEFAULT_OK_HTTP_INTERCEPTOR = chain -> {
@@ -174,11 +174,11 @@ public final class RetrofitSensiApi implements SensiApi {
                 logger.debug("new message");
                 messageId = newMessageId;
                 try {
-                    processOperationalStatus(document);
+                    processUpdate(document);
                 } catch (IOException e) {
                     throw new APIException("Exception while processing poll response body", e);
                 }
-                logger.trace("OperationalStatuses: {}", operationalStatuses);
+                logger.trace("Updates: {}", thermostatUpdateMap);
             }
 
             // check if we have a new groups token, if so update this.groupsToken
@@ -200,11 +200,11 @@ public final class RetrofitSensiApi implements SensiApi {
                 });
     }
 
-    public void registerCallback(BiConsumer<String, OperationalStatus> callback) {
+    public void registerCallback(BiConsumer<String, Update> callback) {
         callbacks.add(callback);
     }
 
-    public void deregisterCallback(BiConsumer<String, OperationalStatus> callback) {
+    public void deregisterCallback(BiConsumer<String, Update> callback) {
         callbacks.remove(callback);
     }
 
@@ -213,21 +213,21 @@ public final class RetrofitSensiApi implements SensiApi {
     }
 
     // possible to have multiple status updates? (for multiple thermostats?)
-    private void processOperationalStatus(Object document) throws IOException {
+    private void processUpdate(Object document) throws IOException {
         try {
-            String icd = JsonPath.parse(document).read(OPERATIONAL_STATUS_ICD_PATH, String.class);
+            String icd = JsonPath.parse(document).read(UPDATE_ICD_PATH, String.class);
             if (icd == null) {
                 return;
             }
-            OperationalStatus operationalStatus = JsonPath.parse(document)
-                    .read(OPERATIONAL_STATUS_DATA_PATH, OperationalStatus.class);
-            if (operationalStatus == null) {
+            Update update = JsonPath.parse(document)
+                    .read(UPDATE_DATA_PATH, Update.class);
+            if (update == null) {
                 return;
             }
-            OperationalStatus mergedStatus = operationalStatuses.merge(icd, operationalStatus, OperationalStatus::merge);
+            Update mergedUpdate = thermostatUpdateMap.merge(icd, update, Update::merge);
             logger.debug("notifying {} callback(s) of updated status", callbacks.size());
-            logger.trace("updated status [{}]: {}", icd, mergedStatus);
-            callbacks.forEach(operationalStatusConsumer -> operationalStatusConsumer.accept(icd, mergedStatus));
+            logger.trace("updated status [{}]: {}", icd, mergedUpdate);
+            callbacks.forEach(updateConsumer -> updateConsumer.accept(icd, mergedUpdate));
         } catch (PathNotFoundException e) {
             // Option.SUPPRESS_EXCEPTIONS throws AssertionError when GsonMappingProvider is used
             // ignore PathNotFoundException instead
