@@ -1,6 +1,6 @@
-package com.ianhattendorf.sensi.sensiapi.response;
+package com.ianhattendorf.sensi.sensiapi.response.data;
 
-public final class ThermostatResponse {
+public final class Thermostat {
     private final String deviceName;
     private final Integer contractorId;
     private final String address1;
@@ -11,8 +11,8 @@ public final class ThermostatResponse {
     private final String zipCode;
     private final String country;
 
-    public ThermostatResponse(String deviceName, Integer contractorId, String address1, String city, String state,
-                              String iCD, String timeZone, String zipCode, String country) {
+    public Thermostat(String deviceName, Integer contractorId, String address1, String city, String state,
+                      String iCD, String timeZone, String zipCode, String country) {
         this.deviceName = deviceName;
         this.contractorId = contractorId;
         this.address1 = address1;
@@ -62,7 +62,7 @@ public final class ThermostatResponse {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ThermostatResponse{");
+        final StringBuilder sb = new StringBuilder("Thermostat{");
         sb.append("deviceName='").append(deviceName).append('\'');
         sb.append(", contractorId=").append(contractorId);
         sb.append(", address1='").append(address1).append('\'');

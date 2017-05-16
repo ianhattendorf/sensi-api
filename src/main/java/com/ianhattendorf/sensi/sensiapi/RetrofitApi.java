@@ -2,6 +2,8 @@ package com.ianhattendorf.sensi.sensiapi;
 
 import com.ianhattendorf.sensi.sensiapi.request.AuthorizeRequest;
 import com.ianhattendorf.sensi.sensiapi.response.*;
+import com.ianhattendorf.sensi.sensiapi.response.data.Thermostat;
+import com.ianhattendorf.sensi.sensiapi.response.data.Weather;
 import okhttp3.ResponseBody;
 import retrofit2.http.*;
 
@@ -13,7 +15,10 @@ public interface RetrofitApi {
     CompletableFuture<AuthorizeResponse> authorize(@Body AuthorizeRequest authorizeRequest);
 
     @GET("/api/thermostats")
-    CompletableFuture<List<ThermostatResponse>> thermostats();
+    CompletableFuture<List<Thermostat>> thermostats();
+
+    @GET("/api/weather/{icd}")
+    CompletableFuture<Weather> weather(@Path("icd") String icd);
 
     @GET("/realtime/negotiate")
     CompletableFuture<NegotiateResponse> negotiate(@Query("_") long ts);

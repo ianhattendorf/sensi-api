@@ -4,10 +4,11 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ianhattendorf.sensi.sensiapi.request.AuthorizeRequest;
-import com.ianhattendorf.sensi.sensiapi.response.ThermostatResponse;
+import com.ianhattendorf.sensi.sensiapi.response.data.Thermostat;
 import com.ianhattendorf.sensi.sensiapi.exception.APIException;
 import com.ianhattendorf.sensi.sensiapi.request.SubscribeRequest;
 import com.ianhattendorf.sensi.sensiapi.response.data.Update;
+import com.ianhattendorf.sensi.sensiapi.response.data.Weather;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class RetrofitSensiApi implements SensiApi {
@@ -39,9 +41,9 @@ public final class RetrofitSensiApi implements SensiApi {
     private String connectionToken;
     private String groupsToken;
     private String messageId;
-    private List<ThermostatResponse> thermostats;
+    private Map<String, Thermostat> thermostatMap;
     private Map<String, Update> thermostatUpdateMap = new HashMap<>();
-    private final Set<BiConsumer<String, Update>> callbacks = new LinkedHashSet<>();
+    private final Set<BiConsumer<Thermostat, Update>> callbacks = new LinkedHashSet<>();
     private final Gson gson = gsonFactory();
 
     private static final Logger logger = LoggerFactory.getLogger(RetrofitSensiApi.class);
@@ -114,10 +116,11 @@ public final class RetrofitSensiApi implements SensiApi {
                 })
                 // realtime negotiate (get connectionToken)
                 .thenCompose(thermostatResponses -> {
-                    thermostats = thermostatResponses;
-                    logger.debug("fetched {} thermostat(s) successfully", thermostats.size());
+                    thermostatMap = thermostatResponses.stream()
+                            .collect(Collectors.toMap(Thermostat::getiCD, Function.identity()));
+                    logger.debug("fetched {} thermostat(s) successfully", thermostatMap.size());
                     if (logger.isTraceEnabled()) {
-                        logger.trace("thermostats: {}", Arrays.toString(thermostats.toArray()));
+                        logger.trace("thermostats: {}", Arrays.toString(thermostatMap.values().toArray()));
                     }
                     return retrofitApi.negotiate(RetrofitSensiApi.getUnixTimestamp());
                 })
@@ -139,8 +142,8 @@ public final class RetrofitSensiApi implements SensiApi {
     }
 
     public CompletableFuture<Void> subscribe() {
-        List<CompletableFuture<Void>> futures = thermostats.stream().map(thermostatResponse -> {
-            SubscribeRequest subRequest = new SubscribeRequest(thermostatResponse.getiCD(), subscriptionId++);
+        List<CompletableFuture<Void>> futures = thermostatMap.entrySet().stream().map(thermostat -> {
+            SubscribeRequest subRequest = new SubscribeRequest(thermostat.getKey(), subscriptionId++);
             String subRequestBody = gson.toJson(subRequest);
             return retrofitApi.subscribe(TRANSPORT, connectionToken, subRequestBody)
                     .thenAccept(subscribeResponse -> {
@@ -200,16 +203,27 @@ public final class RetrofitSensiApi implements SensiApi {
                 });
     }
 
-    public void registerCallback(BiConsumer<String, Update> callback) {
+    public void registerCallback(BiConsumer<Thermostat, Update> callback) {
         callbacks.add(callback);
     }
 
-    public void deregisterCallback(BiConsumer<String, Update> callback) {
+    public void deregisterCallback(BiConsumer<Thermostat, Update> callback) {
         callbacks.remove(callback);
     }
 
     public void deregisterAllCallbacks() {
         callbacks.clear();
+    }
+
+    public Collection<Thermostat> getThermostats() {
+        return thermostatMap.values();
+    }
+
+    public CompletableFuture<Weather> getWeather(String icd) {
+        return retrofitApi.weather(icd).thenApply(weather -> {
+            logger.debug("Received weather: {}", weather);
+            return weather;
+        });
     }
 
     // possible to have multiple status updates? (for multiple thermostats?)
@@ -227,7 +241,7 @@ public final class RetrofitSensiApi implements SensiApi {
             Update mergedUpdate = thermostatUpdateMap.merge(icd, update, Update::merge);
             logger.debug("notifying {} callback(s) of updated status", callbacks.size());
             logger.trace("updated status [{}]: {}", icd, mergedUpdate);
-            callbacks.forEach(updateConsumer -> updateConsumer.accept(icd, mergedUpdate));
+            callbacks.forEach(updateConsumer -> updateConsumer.accept(thermostatMap.get(icd), mergedUpdate));
         } catch (PathNotFoundException e) {
             // Option.SUPPRESS_EXCEPTIONS throws AssertionError when GsonMappingProvider is used
             // ignore PathNotFoundException instead
