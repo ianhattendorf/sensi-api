@@ -10,6 +10,9 @@ import retrofit2.http.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * RetrofitApi implementing parts of the Sensi API.
+ */
 public interface RetrofitApi {
     @POST("/api/authorize")
     CompletableFuture<AuthorizeResponse> authorize(@Body AuthorizeRequest authorizeRequest);

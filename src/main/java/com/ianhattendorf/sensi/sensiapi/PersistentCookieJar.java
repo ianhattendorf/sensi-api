@@ -9,7 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-// ignore URL
+/**
+ * {@link CookieJar} implementation specifically for {@link SensiApi}, returns all cookies regardless of URL.
+ */
 public final class PersistentCookieJar implements CookieJar {
     private final Set<String> cookieSet = new HashSet<>();
     private final List<Cookie> cookies = new ArrayList<>();

@@ -48,6 +48,7 @@ public final class RetrofitSensiApi implements SensiApi {
 
     private static final Logger logger = LoggerFactory.getLogger(RetrofitSensiApi.class);
     private static final String TRANSPORT = "longPolling";
+    private static final String DEFAULT_SENSI_API_URL = "https://bus-serv.sensicomfort.com";
     // [{"name":"thermostat-v1"}]
     private static final String CONNECTION_DATA = "%5B%7B%22name%22%3A%22thermostat-v1%22%7D%5D";
     private static final String UPDATE_ICD_PATH = "$.M[0].A[0]";
@@ -100,6 +101,13 @@ public final class RetrofitSensiApi implements SensiApi {
         });
     }
 
+    /**
+     * Construct the {@link RetrofitSensiApi}.
+     * @param username Sensi API username.
+     * @param password Sensi API password.
+     * @param retrofitApi {@link RetrofitApi} instance.
+     * @see RetrofitSensiApi.Builder
+     */
     public RetrofitSensiApi(String username, String password, RetrofitApi retrofitApi) {
         this.username = username;
         this.password = password;
@@ -255,13 +263,25 @@ public final class RetrofitSensiApi implements SensiApi {
                 .create();
     }
 
+    /**
+     * Creates a default {@link RetrofitApi} instance.
+     * @return The {@link RetrofitApi} instance.
+     */
     public static RetrofitApi buildRetrofitApi() {
         return buildRetrofitApi(null, null, null);
     }
 
+    /**
+     * Contstruct a {@link RetrofitApi} instance. See {@link RetrofitSensiApi.Builder} for additional information.
+     * @param apiUrl Sensi API endpoint url.
+     * @param cookieJar {@link CookieJar} implementation.
+     * @param interceptors okhttp interceptors.
+     * @return {@link RetrofitApi} instance.
+     * @see RetrofitSensiApi.Builder
+     */
     public static RetrofitApi buildRetrofitApi(String apiUrl, CookieJar cookieJar, Collection<Interceptor> interceptors) {
         if (apiUrl == null) {
-            apiUrl = "https://bus-serv.sensicomfort.com";
+            apiUrl = DEFAULT_SENSI_API_URL;
         }
         if (cookieJar == null) {
             cookieJar = new PersistentCookieJar();
@@ -299,6 +319,9 @@ public final class RetrofitSensiApi implements SensiApi {
         return System.currentTimeMillis();
     }
 
+    /**
+     * Builder for {@link RetrofitSensiApi}
+     */
     public static final class Builder {
         private String username;
         private String password;
@@ -306,36 +329,74 @@ public final class RetrofitSensiApi implements SensiApi {
         private Collection<Interceptor> interceptors = new ArrayList<>();
         private CookieJar cookieJar;
 
+        /**
+         * Set Sensi API username
+         * @param username username
+         * @return The builder for chaining
+         */
         public Builder setUsername(String username) {
             this.username = username;
             return this;
         }
 
+        /**
+         * Set Sensi API password
+         * @param password password
+         * @return The builder for chaining
+         */
         public Builder setPassword(String password) {
             this.password = password;
             return this;
         }
 
+        /**
+         * Set Sensi API URL endpoint, defaults to {@link RetrofitSensiApi#DEFAULT_SENSI_API_URL}
+         * @param apiUrl apiUrl
+         * @return The builder for chaining
+         */
         public Builder setApiUrl(String apiUrl) {
             this.apiUrl = apiUrl;
             return this;
         }
 
+        /**
+         * Set the okhttp interceptors to add
+         * NOTE: If any interceptors are added, the default interceptor used to set headers will not be added. You will
+         * need to either implement your own or add the {@link RetrofitSensiApi#DEFAULT_OK_HTTP_INTERCEPTOR} yourself.
+         * @param interceptors interceptors
+         * @return The builder for chaining
+         */
         public Builder setInterceptors(Collection<Interceptor> interceptors) {
             this.interceptors = interceptors;
             return this;
         }
 
+        /**
+         * Add an okhttp interceptor
+         * NOTE: If any interceptors are added, the default interceptor used to set headers will not be added. You will
+         * need to either implement your own or add the {@link RetrofitSensiApi#DEFAULT_OK_HTTP_INTERCEPTOR} yourself.
+         * @param interceptor interceptor
+         * @return The builder for chaining
+         */
         public Builder addInterceptor(Interceptor interceptor) {
             this.interceptors.add(interceptor);
             return this;
         }
 
+        /**
+         * Set the {@link CookieJar} implementation to use.
+         * @param cookieJar cookieJar.
+         * @return The builder for chaining.
+         */
         public Builder setCookieJar(CookieJar cookieJar) {
             this.cookieJar = cookieJar;
             return this;
         }
 
+        /**
+         * Create the {@link SensiApi} instance.
+         * @return The {@link SensiApi} instance.
+         */
         public SensiApi build() {
             return new RetrofitSensiApi(username, password, RetrofitSensiApi.buildRetrofitApi(apiUrl, cookieJar, interceptors));
         }
