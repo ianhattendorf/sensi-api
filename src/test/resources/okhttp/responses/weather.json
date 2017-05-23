@@ -1,0 +1,21 @@
+{
+  "Condition":"Clear",
+  "ConditionId":20,
+  "CurrentTemp":{
+    "F":102,
+    "C":39
+  },
+  "HighTemp":{
+    "F":104,
+    "C":40
+  },
+  "LowTemp":{
+    "F":75,
+    "C":24
+  },
+  "Location":{
+    "Zipcode":"12345",
+    "City":"Tempe",
+    "State":"AZ"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "Url":"/realtime",
+  "ConnectionToken":"connection-token-here",
+  "ConnectionId":"guid-here",
+  "KeepAliveTimeout":20.0,
+  "DisconnectTimeout":30.0,
+  "TryWebSockets":false,
+  "ProtocolVersion":"1.2"
+}

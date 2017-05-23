@@ -16,11 +16,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test {@link RetrofitSensiApi}, hitting the Sensi API endpoint.
+ */
 public final class RetrofitSensiApiIT {
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         Properties properties = new Properties();
-        properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties"));
+        properties.load(TestHelper.loadFile("app.properties"));
 
         SensiApi api = new RetrofitSensiApi.Builder()
                 .setUsername(properties.getProperty("username"))
@@ -30,14 +33,23 @@ public final class RetrofitSensiApiIT {
         BiConsumer<Thermostat, Update> callback = (BiConsumer<Thermostat, Update>) mock(BiConsumer.class);
         api.registerCallback(callback);
 
-        api.start().thenRun(api::subscribe).get(30, TimeUnit.SECONDS);
+        api.start().get(30, TimeUnit.SECONDS);
+
+        api.subscribe().get(30, TimeUnit.SECONDS);
+
         Collection<Thermostat> thermostats = api.getThermostats();
         assertFalse(thermostats.isEmpty());
-        Weather weather = api.getWeather(thermostats.iterator().next().getiCD()).get(30, TimeUnit.SECONDS);
+        Thermostat thermostat = thermostats.iterator().next();
+        assertNotNull(thermostat.getiCD());
+
+        Weather weather = api.getWeather(thermostat.getiCD()).get(30, TimeUnit.SECONDS);
         assertNotNull(weather);
+        assertNotNull(weather.getCondition());
+
         for (int i = 0; i < 2; ++i) {
-           api.poll().get(30, TimeUnit.SECONDS);
+            api.poll().get(30, TimeUnit.SECONDS);
         }
+
         api.disconnect().get(30, TimeUnit.SECONDS);
 
         verify(callback, atLeastOnce()).accept(notNull(), notNull());
