@@ -9,7 +9,7 @@ This library doesn't handle re-authentication, you'll need to handle this yourse
 See [ianhattendorf/sensi-monitor](https://github.com/ianhattendorf/sensi-monitor) for a usage example.
 
 ## Testing
-The integration test hits the Sensi servers and expects to receive a response from an online thermostat. You'll need to provide an `app.properties` file with your credentials (see `test/resources/app.properties.example`).
+The integration test hits the Sensi servers and expects to receive a response from an online thermostat. You'll need to provide an `app.properties` file with your credentials (see `app.properties.example`).
 
 ## Maven
 ```xml

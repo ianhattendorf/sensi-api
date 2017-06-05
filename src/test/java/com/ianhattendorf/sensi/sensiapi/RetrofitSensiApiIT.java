@@ -5,7 +5,11 @@ import com.ianhattendorf.sensi.sensiapi.response.data.Update;
 import com.ianhattendorf.sensi.sensiapi.response.data.Weather;
 import org.junit.Test;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +27,10 @@ public final class RetrofitSensiApiIT {
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         Properties properties = new Properties();
-        properties.load(TestHelper.loadFile("app.properties"));
+        Path path = Paths.get(System.getProperty("user.dir")).resolve("app.properties");
+        try (InputStream inputStream = new FileInputStream(path.toFile())) {
+            properties.load(inputStream);
+        }
 
         SensiApi api = new RetrofitSensiApi.Builder()
                 .setUsername(properties.getProperty("username"))
