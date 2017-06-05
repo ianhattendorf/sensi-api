@@ -27,7 +27,13 @@ public final class RetrofitSensiApiIT {
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         Properties properties = new Properties();
-        Path path = Paths.get(System.getProperty("user.dir")).resolve("app.properties");
+        String propertiesPath = System.getenv("SENSI_API_PROPERTIES");
+        final Path path;
+        if (propertiesPath == null) {
+            path = Paths.get(System.getProperty("user.home")).resolve(".sensi-api.properties");
+        } else {
+            path = Paths.get(propertiesPath);
+        }
         try (InputStream inputStream = new FileInputStream(path.toFile())) {
             properties.load(inputStream);
         }
