@@ -1,0 +1,22 @@
+<settings>
+  <servers>
+      <server>
+          <id>oss.sonatype.org</id>
+          <username>username</username>
+          <password>password</password>
+      </server>
+  </servers>
+  <profiles>
+      <profile>
+          <id>gpg</id>
+		  <activation>
+			  <activeByDefault>true</activeByDefault>
+		  </activation>
+          <properties>
+              <gpg.executable>gpg2</gpg.executable>
+              <gpg.keyname>97923DF85C294A7AE4058B253A7EA46F568616DC</gpg.keyname>
+			  <!--<gpg.passphrase>passphrase</gpg.passphrase>-->
+          </properties>
+      </profile>
+  </profiles>
+</settings>
