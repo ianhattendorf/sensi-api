@@ -4,7 +4,7 @@
 
     <groupId>com.ianhattendorf.sensi</groupId>
     <artifactId>sensi-api</artifactId>
-    <version>1.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <name>sensi-api</name>
     <description>Unofficial Sensi Java API to monitor Sensi Thermostats for changes.</description>
@@ -30,7 +30,7 @@
         <url>https://github.com/ianhattendorf/sensi-api</url>
         <connection>scm:git:git://github.com/ianhattendorf/sensi-api.git</connection>
         <developerConnection>scm:git:git@github.com:ianhattendorf/sensi-api.git</developerConnection>
-      <tag>v1.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <issueManagement>
