@@ -1,0 +1,13 @@
+language: java
+sudo: false
+
+jdk:
+  - oraclejdk8
+
+script:
+   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn verify -B -DskipITs; fi'
+   - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then mvn verify -B; fi'
+
+cache:
+  directories:
+  - $HOME/.m2

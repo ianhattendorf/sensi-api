@@ -5,11 +5,7 @@ import com.ianhattendorf.sensi.sensiapi.response.data.Update;
 import com.ianhattendorf.sensi.sensiapi.response.data.Weather;
 import org.junit.Test;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -26,21 +22,10 @@ import static org.mockito.Mockito.*;
 public final class RetrofitSensiApiIT {
     @Test
     public void testHappyPath() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Properties properties = new Properties();
-        String propertiesPath = System.getenv("SENSI_API_PROPERTIES");
-        final Path path;
-        if (propertiesPath == null) {
-            path = Paths.get(System.getProperty("user.home")).resolve(".sensi-api.properties");
-        } else {
-            path = Paths.get(propertiesPath);
-        }
-        try (InputStream inputStream = new FileInputStream(path.toFile())) {
-            properties.load(inputStream);
-        }
-
+        TestHelper.ApiCredentials apiCredentials = TestHelper.getApiCredentials();
         SensiApi api = new RetrofitSensiApi.Builder()
-                .setUsername(properties.getProperty("username"))
-                .setPassword(properties.getProperty("password"))
+                .setUsername(apiCredentials.getUsername())
+                .setPassword(apiCredentials.getPassword())
                 .build();
         @SuppressWarnings("unchecked")
         BiConsumer<Thermostat, Update> callback = (BiConsumer<Thermostat, Update>) mock(BiConsumer.class);
