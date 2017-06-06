@@ -29,7 +29,9 @@ public final class RetrofitSensiApiIT {
                 .build();
         @SuppressWarnings("unchecked")
         BiConsumer<Thermostat, Update> callback = (BiConsumer<Thermostat, Update>) mock(BiConsumer.class);
+        boolean[] callbackReceived = new boolean[1];
         api.registerCallback(callback);
+        api.registerCallback((thermostat, update) -> callbackReceived[0] = true);
 
         api.start().get(30, TimeUnit.SECONDS);
 
@@ -44,7 +46,7 @@ public final class RetrofitSensiApiIT {
         assertNotNull(weather);
         assertNotNull(weather.getCondition());
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 5 && !callbackReceived[0]; ++i) {
             api.poll().get(30, TimeUnit.SECONDS);
         }
 
