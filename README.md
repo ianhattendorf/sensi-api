@@ -1,4 +1,8 @@
 # sensi-api
+[![][travis img]][travis]
+[![][maven img]][maven]
+[![][license img]][license]
+
 Unofficial Sensi Java API to monitor Sensi Thermostats for changes.
 
 ## About
@@ -21,3 +25,12 @@ You'll need to provide a properties file (defaults to `~/.sensi-api.properties`,
 	<version>${sensiapi.version}</version>
 </dependency>
 ```
+
+[travis]:https://travis-ci.org/ianhattendorf/sensi-api
+[travis img]:https://travis-ci.org/ianhattendorf/sensi-api.svg?branch=master
+
+[maven]:http://search.maven.org/#search|gav|1|g:"com.ianhattendorf.sensi"%20AND%20a:"sensi-api"
+[maven img]:https://maven-badges.herokuapp.com/maven-central/com.ianhattendorf.sensi/sensi-api/badge.svg
+
+[license]:LICENSE.txt
+[license img]:https://img.shields.io/badge/License-MIT-blue.svg
