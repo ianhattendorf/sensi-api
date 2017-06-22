@@ -34,6 +34,7 @@ public final class RetrofitSensiApiIT {
         api.registerCallback((thermostat, update) -> callbackReceived[0] = true);
 
         api.start().get(30, TimeUnit.SECONDS);
+        Arrays.fill(apiCredentials.getPassword(), '\0');
 
         api.subscribe().get(30, TimeUnit.SECONDS);
 

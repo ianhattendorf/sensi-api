@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public final class RetrofitSensiApi implements SensiApi {
     private final RetrofitApi retrofitApi;
     private final String username;
-    private final String password;
+    private final char[] password;
     private int subscriptionId = 0;
     private String connectionToken;
     private String groupsToken;
@@ -108,7 +108,7 @@ public final class RetrofitSensiApi implements SensiApi {
      * @param retrofitApi {@link RetrofitApi} instance.
      * @see RetrofitSensiApi.Builder
      */
-    public RetrofitSensiApi(String username, String password, RetrofitApi retrofitApi) {
+    public RetrofitSensiApi(String username, char[] password, RetrofitApi retrofitApi) {
         this.username = username;
         this.password = password;
         this.retrofitApi = retrofitApi;
@@ -119,6 +119,7 @@ public final class RetrofitSensiApi implements SensiApi {
         return retrofitApi.authorize(new AuthorizeRequest(username, password))
                 // get thermostats
                 .thenCompose(authorizeResponse -> {
+                    Arrays.fill(password, '\0');
                     logger.debug("authorized successfully");
                     return retrofitApi.thermostats();
                 })
@@ -324,7 +325,7 @@ public final class RetrofitSensiApi implements SensiApi {
      */
     public static final class Builder {
         private String username;
-        private String password;
+        private char[] password;
         private String apiUrl;
         private Collection<Interceptor> interceptors = new ArrayList<>();
         private CookieJar cookieJar;
@@ -344,7 +345,7 @@ public final class RetrofitSensiApi implements SensiApi {
          * @param password password
          * @return The builder for chaining
          */
-        public Builder setPassword(String password) {
+        public Builder setPassword(char[] password) {
             this.password = password;
             return this;
         }
@@ -398,7 +399,9 @@ public final class RetrofitSensiApi implements SensiApi {
          * @return The {@link SensiApi} instance.
          */
         public SensiApi build() {
-            return new RetrofitSensiApi(username, password, RetrofitSensiApi.buildRetrofitApi(apiUrl, cookieJar, interceptors));
+            SensiApi sensiApi = new RetrofitSensiApi(username, password, RetrofitSensiApi.buildRetrofitApi(apiUrl, cookieJar, interceptors));
+            password = null;
+            return sensiApi;
         }
     }
 }

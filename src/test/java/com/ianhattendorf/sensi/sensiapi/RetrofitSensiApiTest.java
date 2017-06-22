@@ -40,7 +40,7 @@ public final class RetrofitSensiApiTest {
         SensiApi api = new RetrofitSensiApi.Builder()
                 .setApiUrl(baseUrl.toString())
                 .setUsername("username")
-                .setPassword("password")
+                .setPassword("password".toCharArray())
                 .build();
         @SuppressWarnings("unchecked")
         BiConsumer<Thermostat, Update> callback = (BiConsumer<Thermostat, Update>) mock(BiConsumer.class);

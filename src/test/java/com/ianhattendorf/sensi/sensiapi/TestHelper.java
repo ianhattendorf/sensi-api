@@ -52,19 +52,19 @@ public final class TestHelper {
         } catch (IOException e) {
             throw new APIException("failed to load credentials", e);
         }
-        return new ApiCredentials(properties.getProperty("username"), properties.getProperty("password"));
+        return new ApiCredentials(properties.getProperty("username"), properties.getProperty("password").toCharArray());
     }
 
     private static ApiCredentials loadCredentialsFromEnv() {
         logger.info("Getting sensi credentials from env");
-        return new ApiCredentials(System.getenv(SENSI_API_USERNAME_ENV), System.getenv(SENSI_API_PASSWORD_ENV));
+        return new ApiCredentials(System.getenv(SENSI_API_USERNAME_ENV), System.getenv(SENSI_API_PASSWORD_ENV).toCharArray());
     }
 
     public static class ApiCredentials {
         private final String username;
-        private final String password;
+        private final char[] password;
 
-        public ApiCredentials(String username, String password) {
+        public ApiCredentials(String username, char[] password) {
             this.username = username;
             this.password = password;
         }
@@ -73,7 +73,7 @@ public final class TestHelper {
             return username;
         }
 
-        public String getPassword() {
+        public char[] getPassword() {
             return password;
         }
     }
