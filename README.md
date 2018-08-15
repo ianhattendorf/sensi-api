@@ -5,6 +5,8 @@
 
 Unofficial Sensi Java API to monitor Sensi Thermostats for changes.
 
+**NOTE: Sensi has updated their API and started charging for web access. This library no longer works and likely requires major updates.**
+
 ## About
 Sensi uses a SignalR API endpoint for their web frontend to provide realtime updates. Unfortunately, they're using an old protocol (v1.2) which isn't supported by the SignalR Java client. Fortunately, we can still communicate via the longPolling transport mode. After authenticating and subscribing to the API, we can repeatedly poll for new events. The server will either keep each request open until an update is available or send an empty response after 20 seconds.
 
